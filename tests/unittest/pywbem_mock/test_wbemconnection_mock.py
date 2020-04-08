@@ -963,7 +963,7 @@ class TestRepoMethods(object):
         else:
             conn.add_cimobjects(tst_classeswqualifiers, namespace=ns)
         # pylint: disable=protected-access
-        assert conn.cimrepository._class_exists(ns, cln) == exp_rtn
+        assert conn.mainprovider._class_exists(ns, cln) == exp_rtn
 
     @pytest.mark.parametrize(
         "ns", INITIAL_NAMESPACES)
@@ -999,9 +999,9 @@ class TestRepoMethods(object):
         # pylint: disable=protected-access
         class_store = conn._get_class_store(ns)
 
-        assert set(conn.cimrepository._get_subclass_names(cln,
-                                                          class_store,
-                                                          di)) == \
+        assert set(conn.mainprovider._get_subclass_names(cln,
+                                                         class_store,
+                                                         di)) == \
             set(exp_clns)
 
     @pytest.mark.parametrize(
@@ -1032,7 +1032,7 @@ class TestRepoMethods(object):
 
         # pylint: disable=protected-access
         class_store = conn._get_class_store(ns)
-        clns = conn.cimrepository._get_superclass_names(cln, class_store)
+        clns = conn.mainprovider._get_superclass_names(cln, class_store)
         assert clns == exp_cln
 
     @pytest.mark.parametrize(
@@ -1074,10 +1074,10 @@ class TestRepoMethods(object):
 
         # _get_class gets a copy of the class filtered by the parameters
         # pylint: disable=protected-access
-        cl = conn.cimrepository._get_class(ns, cln, local_only=lo,
-                                           include_qualifiers=iq,
-                                           include_classorigin=ico,
-                                           property_list=pl)
+        cl = conn.mainprovider._get_class(ns, cln, local_only=lo,
+                                          include_qualifiers=iq,
+                                          include_classorigin=ico,
+                                          property_list=pl)
 
         cl_props = [p.name for p in six.itervalues(cl.properties)]
 
@@ -1172,8 +1172,8 @@ class TestRepoMethods(object):
         if exp_exc is None:
             # pylint: disable=protected-access
             instance_store = conn._get_instance_store(ns)
-            inst = conn.cimrepository._get_instance(ns, iname, instance_store,
-                                                    pl, lo, ico, iq)
+            inst = conn.mainprovider._get_instance(ns, iname, instance_store,
+                                                   pl, lo, ico, iq)
             assert isinstance(inst, CIMInstance)
             assert inst.path.classname.lower() == cln.lower()
             assert iname == inst.path
@@ -1188,9 +1188,9 @@ class TestRepoMethods(object):
             with pytest.raises(exp_exc.__class__) as exec_info:
                 # pylint: disable=protected-access
                 instance_store = conn._get_instance_store(ns)
-                conn.cimrepository._get_instance(ns, iname,
-                                                 instance_store, pl, lo,
-                                                 ico, iq)
+                conn.mainprovider._get_instance(ns, iname,
+                                                instance_store, pl, lo,
+                                                ico, iq)
             exc = exec_info.value
             if isinstance(exp_exc, CIMError):
                 assert exc.status_code == exp_exc.status_code
@@ -1232,7 +1232,7 @@ class TestRepoMethods(object):
                                 namespace=ns)
 
         # pylint: disable=protected-access
-        inst = conn.cimrepository._find_instance(iname, instance_store)
+        inst = conn.mainprovider._find_instance(iname, instance_store)
 
         if exp_ok:
             assert isinstance(inst, CIMInstance)
@@ -1509,7 +1509,7 @@ class TestRepoMethods(object):
         Test _remove_namespace()
         """
         # TODO: This test goes back and forth between the methods in
-        # wbemconnectionfake, cimrepository, and datastore. Make consistent
+        # wbemconnectionfake, mainprovider, and datastore. Make consistent
 
         conn = FakedWBEMConnection()
         conn.add_namespace(default_ns)
@@ -2081,7 +2081,7 @@ def resolve_class(conn, cls, ns):
     # pylint: disable=protected-access
     qualifier_store = conn._get_qualifier_store(ns)
     # pylint: disable=protected-access
-    rslvd_cls = conn.cimrepository._resolve_class(cls, ns, qualifier_store)
+    rslvd_cls = conn.mainprovider._resolve_class(cls, ns, qualifier_store)
     return rslvd_cls
 
 
@@ -2882,7 +2882,7 @@ class TestClassOperations(object):
                                       LocalOnly=False)
             ns = ns or conn.default_namespace
             class_store = conn._get_class_store(ns)
-            superclasses = conn.cimrepository._get_superclass_names(
+            superclasses = conn.mainprovider._get_superclass_names(
                 new_class.classname, class_store)
 
             if new_class.superclass is None:
@@ -3132,9 +3132,9 @@ class TestInstanceOperations(object):
 
         # pylint: disable=protected-access
         class_store = conn._get_class_store(namespace)
-        exp_subclasses = conn.cimrepository._get_subclass_names(cln,
-                                                                class_store,
-                                                                True)
+        exp_subclasses = conn.mainprovider._get_subclass_names(cln,
+                                                               class_store,
+                                                               True)
         exp_subclasses.append(cln)
         sub_class_dict = NocaseDict()
         for name in exp_subclasses:
@@ -4523,11 +4523,8 @@ class TestQualifierOperations(object):
 
             assert rtn_qualifier == qual
 
-            # Test for already exists by doing second set qualifier
-            with pytest.raises(CIMError) as exec_info:
-                conn.SetQualifier(qual, namespace=ns)
-            exc = exec_info.value
-            assert exc.status_code == CIM_ERR_ALREADY_EXISTS
+            # Test for uses modify by Setting second qualifier with same name
+            conn.SetQualifier(qual, namespace=ns)
 
         else:
             if exp_status == CIM_ERR_INVALID_NAMESPACE:
