@@ -385,6 +385,10 @@ Released: not yet
 * Added missing attributes to the test client recorder
   (class TestClientRecorder) (see issue #2118).
 
+* Fixed the issue where formatting the timezone name of a pywbem.MinutesFromUTC
+  object raised NotImplementedError, by adding a tzname() method.
+  (see issue #2160)
+
 **Enhancements:**
 
 * Changed GetCentralInstances methodology in WBEMServer.get_central_instances()
